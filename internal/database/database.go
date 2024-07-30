@@ -2,7 +2,11 @@ package database
 
 import (
 	"drone-backend/internal/models"
+	"fmt"
+	"log"
+	"os"
 
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -10,7 +14,41 @@ import (
 var DB *gorm.DB
 
 func Initialize() error {
-    dsn := "host=localhost user=postgres password=123456 dbname=dronedb port=5432 sslmode=disable"
+
+    env_err := godotenv.Load()
+	if env_err != nil {
+		log.Fatalf("Error loading .env file: %v", env_err)
+	}
+
+    host := os.Getenv("DB_HOST")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+	port := os.Getenv("DB_PORT")
+	// sslmode := os.Getenv("DB_SSLMODE")
+
+    log.Printf("%s", host)
+    // if host == "" {
+	// 	host = "localhost"
+	// }
+	// if user == "" {
+	// 	user = "postgres"
+	// }
+	// if password == "" {
+	// 	password = "123456"
+	// }
+	// if dbname == "" {
+	// 	dbname = "dronedb"
+	// }
+	// if port == "" {
+	// 	port = "5432"
+	// }
+	// if sslmode == "" {
+	// 	sslmode = "disable"
+	// }
+
+    dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, user, password, dbname, port)
+    
     var err error
     DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
     if err != nil {
