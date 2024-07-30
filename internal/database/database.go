@@ -25,9 +25,8 @@ func Initialize() error {
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
 	port := os.Getenv("DB_PORT")
-	// sslmode := os.Getenv("DB_SSLMODE")
+	sslmode := os.Getenv("DB_SSLMODE")
 
-    log.Printf("%s", host)
     // if host == "" {
 	// 	host = "localhost"
 	// }
@@ -47,7 +46,7 @@ func Initialize() error {
 	// 	sslmode = "disable"
 	// }
 
-    dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, user, password, dbname, port)
+    dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s", host, user, password, dbname, port, sslmode)
     
     var err error
     DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
