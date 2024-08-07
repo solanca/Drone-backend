@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"gorm.io/gorm"
 )
@@ -23,6 +24,8 @@ var db *gorm.DB
 func InitDB(database *gorm.DB) {
 	db = database
 }
+
+var mu sync.Mutex
 
 func NewAccessAPI(pdpHandler *handler.PDPHandler, droneAPI *DroneAPI, policyAPI *PolicyAPI) *AccessAPI {
 	return &AccessAPI{PDPHandler: pdpHandler, DroneAPI: droneAPI, PolicyAPI: policyAPI}
@@ -48,6 +51,7 @@ func findDroneByID(droneID string) (*models.Drone, error) {
 }
 
 func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
+    mu.Lock()
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -84,8 +88,10 @@ func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.
     if err := json.NewEncoder(w).Encode(response); err != nil {
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
+    mu.Unlock()
 }
 func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
+    mu.Lock()
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -133,8 +139,10 @@ func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.
     if err := json.NewEncoder(w).Encode(response); err != nil {
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
+    mu.Unlock()
 }
 func (api *AccessAPI) AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
+    mu.Lock()
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -188,4 +196,5 @@ func (api *AccessAPI) AccessRequestHandler(w http.ResponseWriter, r *http.Reques
     if err := json.NewEncoder(w).Encode(response); err != nil {
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
+    mu.Unlock()
 }
