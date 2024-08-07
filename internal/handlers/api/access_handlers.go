@@ -6,6 +6,7 @@ import (
 	"drone-backend/internal/models"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -41,48 +42,47 @@ type AccessResponse struct {
     TransactionHash  string `json:"transaction_hash"`
 }
 
-func findDroneByID(droneID string) (*models.Drone, error) {
-	var drone models.Drone
-	result := database.DB.First(&drone, "ID = ?", droneID)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &drone, nil
-}
-
 func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
     mu.Lock()
+
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
     }
-
+    
     var req AccessRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, "Invalid request payload", http.StatusBadRequest)
         return
     }
 
-    uint64ID, _ := strconv.ParseUint(req.EntityID, 10, 0)
-
-	drone, err := findDroneByID(req.EntityID)
+    uint64ID, err := strconv.ParseUint(req.EntityID, 10, 0)
     if err != nil {
-        http.Error(w, fmt.Sprintf("Failed to get drone: %v", err), http.StatusInternalServerError)
+        http.Error(w, "Invalid entity ID", http.StatusBadRequest)
         return
     }
-    var policy models.Policy
-    result := db.Where("zone = ?", drone.Zone).First(&policy)
-	if result.Error != nil {
-        http.Error(w, "Failed to retrieve policies", http.StatusBadRequest)
-        return
-	}
-    granted, txHash, err := api.PDPHandler.EvaluateAccess(uint(uint64ID), policy.Zone, policy.StartTime.String(), policy.EndTime.String())
+    
+    drone, err := findDroneByID(req.EntityID)
 
+    var policy models.Policy
+    result := database.DB.First(&policy, "zone = ?", drone.Zone)
+    if result.Error != nil {
+        http.Error(w, "Failed to retrieve policies", http.StatusInternalServerError)
+        return
+    }
+    log.Printf(policy.StartTime.String())
+    
+    granted, txHash, err := api.PDPHandler.EvaluateAccess(uint(uint64ID), policy.Zone, policy.StartTime.String(), policy.EndTime.String())
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Failed to evaluate access: %v", err), http.StatusInternalServerError)
+        return
+    }
+    
     response := AccessResponse{
         Granted:         granted,
         TransactionHash: txHash,
     }
-
+    
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -90,6 +90,7 @@ func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.
     }
     mu.Unlock()
 }
+
 func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
     mu.Lock()
     if r.Method != http.MethodPost {
@@ -197,4 +198,13 @@ func (api *AccessAPI) AccessRequestHandler(w http.ResponseWriter, r *http.Reques
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
     mu.Unlock()
+}
+
+func findDroneByID(droneID string) (*models.Drone, error) {
+	var drone models.Drone
+	result := database.DB.First(&drone, "ID = ?", droneID)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &drone, nil
 }
