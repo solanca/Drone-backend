@@ -42,3 +42,7 @@ func (ct *CustomTime) Scan(value interface{}) error {
 	*ct = CustomTime{Time: t}
 	return nil
 }
+
+func (ct CustomTime) String() string {
+	return ct.Format(ctLayout)
+}

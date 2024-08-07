@@ -3,7 +3,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "id",
         "type": "uint256"
@@ -28,7 +28,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "id",
         "type": "uint256"
@@ -41,7 +41,7 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "id",
         "type": "uint256"
@@ -135,6 +135,11 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "exists",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -166,6 +171,11 @@
             "internalType": "uint256[]",
             "name": "value",
             "type": "uint256[]"
+          },
+          {
+            "internalType": "bool",
+            "name": "exists",
+            "type": "bool"
           }
         ],
         "internalType": "struct AttributeContract.Attribute",
@@ -196,6 +206,11 @@
             "internalType": "uint256[]",
             "name": "value",
             "type": "uint256[]"
+          },
+          {
+            "internalType": "bool",
+            "name": "exists",
+            "type": "bool"
           }
         ],
         "internalType": "struct AttributeContract.Attribute[]",
@@ -232,11 +247,16 @@
             "internalType": "uint256[]",
             "name": "value",
             "type": "uint256[]"
+          },
+          {
+            "internalType": "bool",
+            "name": "exists",
+            "type": "bool"
           }
         ],
-        "internalType": "struct AttributeContract.Attribute",
+        "internalType": "struct AttributeContract.Attribute[]",
         "name": "",
-        "type": "tuple"
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",

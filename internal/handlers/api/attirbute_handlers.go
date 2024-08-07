@@ -4,8 +4,11 @@ import (
 	handler "drone-backend/internal/handlers/on-chain"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type AttributeAPI struct {
@@ -17,7 +20,7 @@ func NewAttributeAPI(h *handler.AttributeHandler) *AttributeAPI {
 }
 
 type AttributeResponse struct {
-    ID    uint     `json:"id"`
+    ID    uint
     Name  string   `json:"name"`
     Value []string `json:"value"`
 }
@@ -32,33 +35,34 @@ type CreateAttributeResponse struct {
 }
 
 type UpdateAttributeRequest struct {
-	ID uint `json:"id"`
 	Name string `json:"name"`
 	Value []uint64 `json:"value"`
 }
 
 type UpdateAttributeResponse struct {
-	TransactionHash string `json:"transaction_hash"`
+    ID    uint
+    Name  string   `json:"name"`
+    Value []string `json:"value"`
 }
 
 type RemoveAttributeResponse struct {
 	TransactionHash string `json:"transaction_hash"`
 }
 
+func bigIntSliceToStringSlice(bigInts []*big.Int) []string {
+    strSlice := make([]string, len(bigInts))
+    for i, bigInt := range bigInts {
+        strSlice[i] = bigInt.String()
+    }
+    return strSlice
+}
+
+
 func (api *AttributeAPI) GetAttributeHandler(w http.ResponseWriter, r *http.Request) {
-    idStr := r.URL.Query().Get("id")
-    if idStr == "" {
-        http.Error(w, "Missing 'id' query parameter", http.StatusBadRequest)
-        return
-    }
+	id := mux.Vars(r)["id"]
+    uint64ID, _ := strconv.ParseUint(id, 10, 0)
 
-    idUint, err := strconv.ParseUint(idStr, 10, 64)
-    if err != nil {
-        http.Error(w, "Invalid 'id' query parameter", http.StatusBadRequest)
-        return
-    }
-
-    attr, err := api.Handler.GetAttribute(uint(idUint))
+    attr, err := api.Handler.GetAttribute(uint(uint64ID))
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to get attribute: %v", err), http.StatusInternalServerError)
         return
@@ -80,6 +84,35 @@ func (api *AttributeAPI) GetAttributeHandler(w http.ResponseWriter, r *http.Requ
     if err := json.NewEncoder(w).Encode(response); err != nil {
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
+}
+
+func (api *AttributeAPI) GetAttributeByNameHandler(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+
+    attrs, err := api.Handler.GetAttributesByName(name)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Failed to get attribute by name: %v", err), http.StatusInternalServerError)
+        return
+    }
+
+	var response []AttributeResponse
+	for _, attr := range attrs {
+		valueStrings := make([]string, len(attr.Value))
+		for i, v := range attr.Value {
+			valueStrings[i] = v.String()
+		}
+		response = append(response, AttributeResponse{
+			ID: uint(attr.Id.Uint64()),
+			Name: attr.Name,
+			Value: valueStrings,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
 
 func (api *AttributeAPI) CreateAttributeHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,24 +149,15 @@ func (api *AttributeAPI) CreateAttributeHandler(w http.ResponseWriter, r *http.R
 }
 
 func (api *AttributeAPI) RemoveAttributeHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+    uint64ID, _ := strconv.ParseUint(id, 10, 0)
+
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
-    idStr := r.URL.Query().Get("id")
-    if idStr == "" {
-        http.Error(w, "Missing 'id' query parameter", http.StatusBadRequest)
-        return
-    }
-
-    idUint, err := strconv.ParseUint(idStr, 10, 64)
-    if err != nil {
-        http.Error(w, "Invalid 'id' query parameter", http.StatusBadRequest)
-        return
-    }
-
-	txHash, err := api.Handler.RemoveAttribute(uint(idUint))
+	txHash, err := api.Handler.RemoveAttribute(uint(uint64ID))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to remove attribute: %v", err), http.StatusInternalServerError)
 	}
@@ -150,6 +174,9 @@ func (api *AttributeAPI) RemoveAttributeHandler(w http.ResponseWriter, r *http.R
 }
 
 func (api *AttributeAPI) UpdateAttributeHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+    uint64ID, _ := strconv.ParseUint(id, 10, 0)
+
 	if r.Method != http.MethodPut {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
@@ -165,14 +192,16 @@ func (api *AttributeAPI) UpdateAttributeHandler(w http.ResponseWriter, r *http.R
 		values[i] = uint(v)
 	}
 
-	txHash, err := api.Handler.UpdateAttribtue(uint(req.ID), req.Name, values)
+	attribute, err := api.Handler.UpdateAttribute(uint(uint64ID), req.Name, values)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update attribute: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	response := UpdateAttributeResponse{
-		TransactionHash: txHash,
+		ID: uint(attribute.Id.Uint64()),
+		Name: attribute.Name,
+		Value: bigIntSliceToStringSlice(attribute.Value),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -213,4 +242,3 @@ func (api *AttributeAPI) GetAttributesHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
-// Implement other handlers for attributes (Create, Update, Delete)

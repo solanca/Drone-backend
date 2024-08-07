@@ -31,8 +31,8 @@ func AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	drone, err := findDroneByID(request.DroneId)
-	requestSentence := fmt.Sprintf("Small Drone %s sent the access request", request.DroneId)
+	drone, err := findDroneByID(request.EntityID)
+	requestSentence := fmt.Sprintf("Small Drone %s sent the access request", request.EntityID)
 
 	accessJSON, err := json.Marshal(models.Access{
 		Request: requestSentence,
@@ -46,7 +46,7 @@ func AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Initialize history record with Access JSON
 	history := models.History{
-		Drone:  request.DroneId,
+		Drone:  request.EntityID,
 		Access: datatypes.JSON(accessJSON),
 		Status: "In Progress",
 	}
@@ -58,7 +58,7 @@ func AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// PIP
-	attributes, pipContent := gatherAttributes(request.DroneId)
+	attributes, pipContent := gatherAttributes(request.EntityID)
 	pipJSON, err := json.Marshal(models.PIP{
 		Content: pipContent,
 		Status:  "Completed",

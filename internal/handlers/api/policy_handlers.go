@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type PolicyAPI struct {
@@ -17,7 +19,7 @@ func NewPolicyAPI(h *handler.PolicyHandler) *PolicyAPI {
 }
 
 type PolicyResponse struct {
-	ID uint	`json:"id"`
+	ID uint
 	Zone int	`json:"zone"`
 	StartTime string	`json:"start_time"`
 	EndTime string	`json:"end_time"`
@@ -30,22 +32,23 @@ type CreatePolicyRequest struct {
 }
 
 type CreatePolicyResponse struct {
-	TransactionHash string `json:"transaction_hash"`
+	ID	uint
+	Zone int	`json:"zone"`
+	StartTime string	`json:"start_time"`
+	EndTime	string	`json:"end_time"`
 }
 
 type UpdatePolicyRequest struct {
-	ID	uint `json:"id"`
 	Zone int `json:"zone"`
 	StartTime string `json:"start_time"`
 	EndTime string `json:"end_time"`
 }
 
 type UpdatePolicyResponse struct {
-	TransactionHash string `json:"transaction_hash"`
-}
-
-type RemovePolicyRequest struct {
-	ID uint `json:"id"`
+	ID	uint
+	Zone int	`json:"zone"`
+	StartTime string	`json:"start_time"`
+	EndTime	string	`json:"end_time"`
 }
 
 type RemovePolicyResponse struct {
@@ -57,7 +60,7 @@ type GetPolicyByZoneRequest struct {
 }
 
 type GetPolicyByZoneResponse struct {
-	ID	uint	`json:"id"`
+	ID	uint
 	Zone int	`json:"zone"`
 	StartTime string	`json:"start_time"`
 	EndTime	string	`json:"end_time"`
@@ -104,14 +107,17 @@ func (api *PolicyAPI) CreatePolicyHandler(w http.ResponseWriter, r *http.Request
         return
     }
 
-    txHash, err := api.Handler.CreatePolicy(req.Zone, req.StartTime, req.EndTime)
+    policy, err := api.Handler.CreatePolicy(req.Zone, req.StartTime, req.EndTime)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to create policy: %v", err), http.StatusInternalServerError)
         return
     }
 
     response := CreatePolicyResponse{
-        TransactionHash: txHash,
+        ID: uint(policy.Id.Uint64()),
+        Zone: int(policy.Zone.Int64()),
+        StartTime: policy.StartTime,
+        EndTime: policy.EndTime,
     }
 
     w.Header().Set("Content-Type", "application/json")
@@ -121,8 +127,9 @@ func (api *PolicyAPI) CreatePolicyHandler(w http.ResponseWriter, r *http.Request
     }
 }
 
-// UpdatePolicyHandler handles the /updatePolicy endpoint
 func (api *PolicyAPI) UpdatePolicyHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+    uint64ID, _ := strconv.ParseUint(id, 10, 0)
     if r.Method != http.MethodPut {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -134,14 +141,17 @@ func (api *PolicyAPI) UpdatePolicyHandler(w http.ResponseWriter, r *http.Request
         return
     }
 
-    txHash, err := api.Handler.UpdatePolicy(req.ID, req.Zone, req.StartTime, req.EndTime)
+    policy, err := api.Handler.UpdatePolicy(uint(uint64ID), req.Zone, req.StartTime, req.EndTime)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to update policy: %v", err), http.StatusInternalServerError)
         return
     }
 
     response := UpdatePolicyResponse{
-        TransactionHash: txHash,
+        ID: uint(policy.Id.Uint64()),
+        Zone: int(policy.Zone.Int64()),
+        StartTime: policy.StartTime,
+        EndTime: policy.EndTime,
     }
 
     w.Header().Set("Content-Type", "application/json")
@@ -152,18 +162,14 @@ func (api *PolicyAPI) UpdatePolicyHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (api *PolicyAPI) RemovePolicyHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+    uint64ID, _ := strconv.ParseUint(id, 10, 0)
     if r.Method != http.MethodDelete {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
     }
 
-    var req RemovePolicyRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Invalid request payload", http.StatusBadRequest)
-        return
-    }
-
-    txHash, err := api.Handler.RemovePolicy(req.ID)
+    txHash, err := api.Handler.RemovePolicy(uint(uint64ID))
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to remove policy: %v", err), http.StatusInternalServerError)
         return
@@ -180,21 +186,18 @@ func (api *PolicyAPI) RemovePolicyHandler(w http.ResponseWriter, r *http.Request
     }
 }
 
-// GetPolicyByZoneHandler handles the /getPolicyByZone endpoint
 func (api *PolicyAPI) GetPolicyByZoneHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
     }
 
-    // Extract the 'zone' query parameter from the URL
     zoneStr := r.URL.Query().Get("zone")
     if zoneStr == "" {
         http.Error(w, "Missing 'zone' query parameter", http.StatusBadRequest)
         return
     }
 
-    // Convert 'zone' to int
     zone, err := strconv.Atoi(zoneStr)
     if err != nil {
         http.Error(w, "Invalid 'zone' query parameter", http.StatusBadRequest)

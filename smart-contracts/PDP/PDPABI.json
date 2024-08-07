@@ -2,44 +2,24 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_pipAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_prpAddress",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "entityId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "granted",
-        "type": "bool"
-      }
-    ],
-    "name": "AccessDecision",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "_entityId",
         "type": "uint256"
+      },
+      {
+        "internalType": "int256",
+        "name": "zone",
+        "type": "int256"
+      },
+      {
+        "internalType": "string",
+        "name": "startTime",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "endTime",
+        "type": "string"
       }
     ],
     "name": "evaluateAccess",
@@ -54,24 +34,22 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "pip",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract DroneContract",
-        "name": "",
+        "internalType": "address",
+        "name": "_loggerAddress",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "nonpayable",
+    "type": "constructor"
   },
   {
     "inputs": [],
-    "name": "prp",
+    "name": "logger",
     "outputs": [
       {
-        "internalType": "contract PolicyContract",
+        "internalType": "contract LoggingContract",
         "name": "",
         "type": "address"
       }

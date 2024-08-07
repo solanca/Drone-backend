@@ -1,7 +1,7 @@
 package models
 
 type AccessRequest struct {
-	DroneId string `json:"drone_id"`
+	EntityID string `json:"entity_id"`
 }
 
 type AccessResponse struct {
