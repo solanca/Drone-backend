@@ -64,7 +64,7 @@ func main() {
 	}
 
 	clientURL := os.Getenv("clientURL")
-	password := os.Getenv("password")
+	// password := os.Getenv("password")
 	attributeContractAddress := os.Getenv("attributeContractAddress")
 	policyContractAddress := os.Getenv("policyContractAddress")
 	droneContractAddress := os.Getenv("droneContractAddress")
@@ -72,7 +72,7 @@ func main() {
 	keystoreFile := "./wallet.json"
 	
 	// clientURL := "https://json-rpc.evm.testnet.iotaledger.net"
-	// password := "Wahaha123!@#";
+	password := "Wahaha123!@#";
 	// attributeContractAddress := "0xBE090359fCa730387E674741eF912E3be05a2693"
 	// policyContractAddress := "0xC83eED3676fd6422bE8B4E68dDecD1C3763C26A3"
 	// droneContractAddress := "0x971c1979B399c7B6798A39066684f36C41724221"
