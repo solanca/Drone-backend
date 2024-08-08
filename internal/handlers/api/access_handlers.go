@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -45,7 +46,7 @@ type AccessResponse struct {
 
 func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
     mu.Lock()
-
+    // defer mu.Unlock()
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -92,8 +93,14 @@ func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.
 		http.Error(w, "Drone does not exist.", http.StatusBadRequest)
 	}
 
-	pipContent := fmt.Sprintf("Drone %d attributes gathered: Model Type: %s, Zone: %d",
-		drone.ID, drone.ModelType, drone.Zone)
+    loc, err := time.LoadLocation("Asia/Riyadh")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+	}
+
+    currentTime := time.Now().In(loc);
+	pipContent := fmt.Sprintf("Drone %d attributes gathered: Model Type: %s, Zone: %d, Time: %s",
+		drone.ID, drone.ModelType, drone.Zone, currentTime.Format(time.RFC3339))
 
 	pipJSON, err := json.Marshal(models.PIP{
 		Content: pipContent,
@@ -164,16 +171,17 @@ func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.
         TransactionHash: txHash,
     }
     
+    mu.Unlock()
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     if err := json.NewEncoder(w).Encode(response); err != nil {
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
-    mu.Unlock()
 }
 
 func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
     mu.Lock()
+    // defer mu.Unlock()
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -211,15 +219,20 @@ func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.
     uint64ID, _ := strconv.ParseUint(req.EntityID, 10, 0)
 
     // PIP
-
     drone, err := findDroneByID(req.EntityID)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to get drone: %v", err), http.StatusInternalServerError)
         return
     }
 
-	pipContent := fmt.Sprintf("Drone %d attributes gathered: Model Type: %s, Zone: %d",
-		drone.ID, drone.ModelType, drone.Zone)
+    loc, err := time.LoadLocation("Asia/Riyadh")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+	}
+
+    currentTime := time.Now().In(loc);
+	pipContent := fmt.Sprintf("Drone %d attributes gathered: Model Type: %s, Zone: %d, Time: %s",
+		drone.ID, drone.ModelType, drone.Zone, currentTime.Format(time.RFC3339))
 
 	pipJSON, err := json.Marshal(models.PIP{
 		Content: pipContent,
@@ -242,6 +255,7 @@ func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.
         return
     }
 
+    log.Printf("%v", policy)
     prpContent := fmt.Sprintf("Policies retrieved for zone %d policies found.", policy.Zone)
 
     prpJSON, err := json.Marshal(models.PRP{
@@ -295,16 +309,17 @@ func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.
         Granted:         granted,
         TransactionHash: txHash,
     }
-
+    
+    mu.Unlock()
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     if err := json.NewEncoder(w).Encode(response); err != nil {
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
-    mu.Unlock()
 }
 func (api *AccessAPI) AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
     mu.Lock()
+    // defer mu.Unlock()
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -315,13 +330,60 @@ func (api *AccessAPI) AccessRequestHandler(w http.ResponseWriter, r *http.Reques
         http.Error(w, "Invalid request payload", http.StatusBadRequest)
         return
     }
+
+    requestSentence := fmt.Sprintf("Small Drone %s sent the access request", req.EntityID)
+	accessJSON, err := json.Marshal(models.Access{
+        Request: requestSentence,
+		Status:  "Received",
+	})
+	if err != nil {
+        log.Printf("Error marshaling Access: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+    
+    history := models.History{
+        Drone:  req.EntityID,
+		Access: datatypes.JSON(accessJSON),
+		Status: "In Progress",
+	}
+
+	if err := database.DB.Create(&history).Error; err != nil {
+        log.Printf("Error creating history record: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
     uint64ID, _ := strconv.ParseUint(req.EntityID, 10, 0)
 
+    // PIP
     drone, err := api.DroneAPI.Handler.GetDrone(uint(uint64ID))
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to get drone: %v", err), http.StatusInternalServerError)
         return
     }
+    loc, err := time.LoadLocation("Asia/Riyadh")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+	}
+
+    currentTime := time.Now().In(loc);
+	pipContent := fmt.Sprintf("Drone %d attributes gathered: Model Type: %s, Zone: %d, Time: %s",
+		drone.Id, drone.ModelType, drone.Zone, currentTime.Format(time.RFC3339))
+
+	pipJSON, err := json.Marshal(models.PIP{
+		Content: pipContent,
+		Status:  "Completed",
+	})
+	if err != nil {
+		log.Printf("Error marshaling PIP: %v", err)
+	}
+
+	history.PIP = datatypes.JSON(pipJSON)
+
+	if err := database.DB.Save(&history).Error; err != nil {
+		log.Printf("Error updating history with PIP: %v", err)
+	}
 
     droneResponse := DroneResponse{
         ID: uint(drone.Id.Uint64()),
@@ -329,11 +391,28 @@ func (api *AccessAPI) AccessRequestHandler(w http.ResponseWriter, r *http.Reques
         Zone: int(drone.Zone.Int64()),
     }
 
+    // PRP
     policy, err := api.PolicyAPI.Handler.GetPolicyByZone(droneResponse.Zone)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to get policy by zone: %v", err), http.StatusInternalServerError)
         return
     }
+
+    log.Printf("%v", policy)
+    prpContent := fmt.Sprintf("Policies retrieved for zone %d policies found.", policy.Zone)
+
+    prpJSON, err := json.Marshal(models.PRP{
+		Content: prpContent,
+		Status:  "Completed",
+	})
+	if err != nil {
+		log.Printf("Error marshaling PRP: %v", err)
+	}
+
+	history.PRP = datatypes.JSON(prpJSON)
+	if err := database.DB.Save(&history).Error; err != nil {
+		log.Printf("Error updating history with PRP: %v", err)
+	}
 
     policyResponse := PolicyResponse{
         ID: uint(policy.Id.Uint64()),
@@ -342,23 +421,44 @@ func (api *AccessAPI) AccessRequestHandler(w http.ResponseWriter, r *http.Reques
         EndTime: policy.EndTime,
     }
 
+    // PDP
     granted, txHash, err := api.PDPHandler.EvaluateAccess(uint(uint64ID), policyResponse.Zone, policyResponse.StartTime, policyResponse.EndTime)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to evaluate access: %v", err), http.StatusInternalServerError)
         return
     }
 
+    pdpDecision := "Denied"
+	if granted {
+		pdpDecision = "Granted"
+	}
+
+	pdpJSON, err := json.Marshal(models.PDP{
+		Decision: pdpDecision,
+		Status:   "Completed",
+	})
+	if err != nil {
+		log.Printf("Error marshaling PDP: %v", err)
+	}
+
+	history.PDP = datatypes.JSON(pdpJSON)
+	history.Status = pdpDecision
+
+	if err := database.DB.Save(&history).Error; err != nil {
+		log.Printf("Error updating history with PDP: %v", err)
+	}
+
     response := AccessResponse{
         Granted:         granted,
         TransactionHash: txHash,
     }
 
+    mu.Unlock()
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     if err := json.NewEncoder(w).Encode(response); err != nil {
         http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
     }
-    mu.Unlock()
 }
 
 func findDroneByID(droneID string) (*models.Drone, error) {

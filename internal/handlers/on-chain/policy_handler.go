@@ -190,14 +190,14 @@ func (h *PolicyHandler) GetPolicyByZone(zone int) (Policy.PolicyContractPolicy, 
     var policy Policy.PolicyContractPolicy
     for _, vLog := range receipt.Logs {
         log.Printf("Processing log with topics: %v", vLog.Topics)
-        eventSignature := []byte("ActionLogged(address,string,uint256,string)")
+        eventSignature := []byte("ActionLogged(address,string,string,string)")
         eventSigHash := crypto.Keccak256Hash(eventSignature)
         if len(vLog.Topics) > 0 && vLog.Topics[0] == eventSigHash {
             log.Println("Matching event signature found, attempting to parse event")
             var event struct {
                 User    *big.Int
                 Action string
-                Timestamp  *big.Int
+                Timestamp  string
                 Data string
             }
             err := h.parseLog(vLog, &event)
@@ -230,10 +230,40 @@ func (h *PolicyHandler) GetPolicyByZone(zone int) (Policy.PolicyContractPolicy, 
 func (h *PolicyHandler) parseLog(logEntry *types.Log, event *struct {
     User    *big.Int
     Action string
-    Timestamp  *big.Int
+    Timestamp  string
     Data string
 }) error {
-    abiDefinition := `[{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"user","type":"uint256"},{"indexed":false,"internalType":"string","name":"action","type":"string"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}, {"indexed":false, "internalType":"string","name":"data","type":"string"}],"name":"ActionLogged","type":"event"}]`
+    abiDefinition := `[{
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "action",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "timestamp",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "data",
+        "type": "string"
+      }
+    ],
+    "name": "ActionLogged",
+    "type": "event"
+  }]`
     parsedABI, err := abi.JSON(strings.NewReader(abiDefinition))
     if err != nil {
         return err

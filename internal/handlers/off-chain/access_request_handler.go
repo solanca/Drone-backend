@@ -152,9 +152,14 @@ func gatherAttributes(droneID string) (map[string]interface{}, string) {
 		}, "Drone not found"
 	}
 	
+	loc, err := time.LoadLocation("Asia/Riyadh")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+	}
+
 	attributes := map[string]interface{}{
 		"drone_id": droneID,
-		"time": time.Now(),
+		"time": time.Now().In(loc),
 		"model_type": drone.ModelType,
 		"zone": drone.Zone,
 	}

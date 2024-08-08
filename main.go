@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"drone-backend/internal/database"
 	"drone-backend/internal/handlers/api"
@@ -19,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
 
@@ -56,14 +58,25 @@ func main() {
 
 	r.HandleFunc("/off-chain/accessRequest", handlers.AccessRequestHandler).Methods(http.MethodPost)
 
-	
-	clientURL := "https://json-rpc.evm.testnet.iotaledger.net"
+	env_err := godotenv.Load()
+	if env_err != nil {
+		log.Fatalf("Error loading .env file: %v", env_err)
+	}
+
+	clientURL := os.Getenv("clientURL")
+	password := os.Getenv("password")
+	attributeContractAddress := os.Getenv("attributeContractAddress")
+	policyContractAddress := os.Getenv("policyContractAddress")
+	droneContractAddress := os.Getenv("droneContractAddress")
+	pdpContractAddress := os.Getenv("pdpContractAddress")
 	keystoreFile := "./wallet.json"
-	password := "Wahaha123!@#";
-	attributeContractAddress := "0xBE090359fCa730387E674741eF912E3be05a2693"
-	policyContractAddress := "0xC83eED3676fd6422bE8B4E68dDecD1C3763C26A3"
-	droneContractAddress := "0x971c1979B399c7B6798A39066684f36C41724221"
-	pdpContractAddress := "0x5651987cd71bA9f5FF2d5d127a4C4116af53567d"
+	
+	// clientURL := "https://json-rpc.evm.testnet.iotaledger.net"
+	// password := "Wahaha123!@#";
+	// attributeContractAddress := "0xBE090359fCa730387E674741eF912E3be05a2693"
+	// policyContractAddress := "0xC83eED3676fd6422bE8B4E68dDecD1C3763C26A3"
+	// droneContractAddress := "0x971c1979B399c7B6798A39066684f36C41724221"
+	// pdpContractAddress := "0x5651987cd71bA9f5FF2d5d127a4C4116af53567d"
 
 	client, err := ethclient.Dial(clientURL)
     if err != nil {
