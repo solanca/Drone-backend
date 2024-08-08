@@ -30,8 +30,6 @@ func AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-
-	drone, err := findDroneByID(request.EntityID)
 	requestSentence := fmt.Sprintf("Small Drone %s sent the access request", request.EntityID)
 
 	accessJSON, err := json.Marshal(models.Access{
@@ -58,6 +56,11 @@ func AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// PIP
+	drone, err := findDroneByID(request.EntityID)
+	if err != nil {
+		log.Printf("Error finding drone: %v", err)
+		http.Error(w, "Drone does not exist.", http.StatusBadRequest)
+	}
 	attributes, pipContent := gatherAttributes(request.EntityID)
 	pipJSON, err := json.Marshal(models.PIP{
 		Content: pipContent,
@@ -155,7 +158,7 @@ func gatherAttributes(droneID string) (map[string]interface{}, string) {
 		"model_type": drone.ModelType,
 		"zone": drone.Zone,
 	}
-	pipContent := fmt.Sprintf("Drone %s attributes gathered: Model Type: %s, Zone: %s, Time: %s",
+	pipContent := fmt.Sprintf("Drone %s attributes gathered: Model Type: %s, Zone: %d, Time: %s",
 		droneID, drone.ModelType, drone.Zone, attributes["time"].(time.Time).Format(time.RFC3339))
 
 		return attributes, pipContent
@@ -169,7 +172,7 @@ func retrievePolicies(zone int) ([]models.Policy, string) {
 	}
 
 	prpContent := fmt.Sprintf("Policies retrieved for zone %d policies found.",
-		zone, len(policies))
+		zone)
 	if len(policies) > 0 {
 		prpContent += " Policy details: "
 		for i, policy := range policies {
