@@ -67,10 +67,11 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
 
     log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
 
-    eventSignature := []byte("AccessDecision(uint256,bool)")
+    eventSignature := []byte("ActionLogged(address,string,string,string)")
     eventSigHash := crypto.Keccak256Hash(eventSignature)
     accessGranted := false
 
+    // var policy Policy.PolicyContractPolicy
     for _, vLog := range receipt.Logs {
         log.Printf("Processing log with topics: %v", vLog.Topics)
         if len(vLog.Topics) == 0 || vLog.Topics[0] != eventSigHash {
@@ -81,8 +82,10 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
         // Parse the event
         log.Println("Matching event signature found, attempting to parse event")
         var event struct {
-            EntityId *big.Int
-            Granted  bool
+            User    *big.Int
+            Action string
+            Timestamp  string
+            Data string
         }
         err := h.parseAccessDecision(vLog, &event)
         if err != nil {
@@ -91,16 +94,23 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
         }
 
         // Log event details
-        log.Printf("Event parsed successfully: EntityId=%s, Granted=%t", event.EntityId.String(), event.Granted)
+        // log.Printf("Event parsed successfully: EntityId=%s, Granted=%t", event.EntityId.String(), event.Granted)
 
-        // Check if the event matches the given entityId
-        if event.EntityId.Cmp(bigID) == 0 {
-            log.Printf("Event entityId matches: %s", event.EntityId.String())
-            accessGranted = event.Granted
-            break
+        // bigInt := new(big.Int)
+        parts := strings.Split(event.Data, ",")
+        log.Printf(event.Data)
+        // id, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[0], ":")[1]), 10)
+        // zone, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[1], ":")[1]), 10)
+        // curretnTime := strings.TrimSpace(strings.SplitN(parts[2], ":", 2)[1])
+        granted := strings.TrimSpace(strings.Split(parts[3], ":")[1]);
+
+        if granted == "Progressed" {
+            accessGranted = true
         } else {
-            log.Printf("Event entityId does not match: %s", event.EntityId.String())
+            accessGranted = false
         }
+        // Check if the event matches the given entityId
+
     }
 
     log.Printf("EvaluateAccess completed: Granted=%t", accessGranted)
@@ -108,32 +118,57 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
 }
 
 func (h *PDPHandler) parseAccessDecision(logEntry *types.Log, event *struct {
-    EntityId *big.Int
-    Granted  bool
+    User    *big.Int
+    Action string
+    Timestamp  string
+    Data string
 }) error {
-    abiDefinition := `[{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"entityId","type":"uint256"},{"indexed":false,"internalType":"bool","name":"granted","type":"bool"}],"name":"AccessDecision","type":"event"}]`
+    abiDefinition := `[{
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "action",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "timestamp",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "data",
+        "type": "string"
+      }
+    ],
+    "name": "ActionLogged",
+    "type": "event"
+  }]`
     parsedABI, err := abi.JSON(strings.NewReader(abiDefinition))
     if err != nil {
-        log.Printf("Failed to parse ABI definition: %v", err)
         return err
     }
 
-    // Ensure that the logEntry contains enough topics
-    if len(logEntry.Topics) < 2 {
-        log.Printf("Log entry has insufficient topics: %v", logEntry.Topics)
+    err = parsedABI.UnpackIntoInterface(event, "ActionLogged", logEntry.Data)
+    if err != nil {
+        return err
+    }
+
+    if len(logEntry.Topics) > 1 {
+        event.User = new(big.Int).SetBytes(logEntry.Topics[1].Bytes())
+    } else {
         return fmt.Errorf("insufficient topics in log entry")
     }
 
-    err = parsedABI.UnpackIntoInterface(event, "AccessDecision", logEntry.Data)
-    if err != nil {
-        log.Printf("Failed to unpack event data: %v", err)
-        return err
-    }
-
-    // Indexed fields are not part of the log.Data, so extract them from Topics
-    event.EntityId = new(big.Int).SetBytes(logEntry.Topics[1].Bytes())
-    log.Printf("Extracted indexed EntityId: %s", event.EntityId.String())
-
     return nil
 }
-
