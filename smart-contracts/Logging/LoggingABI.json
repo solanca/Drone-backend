@@ -17,12 +17,6 @@
       {
         "indexed": false,
         "internalType": "string",
-        "name": "timestamp",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
         "name": "data",
         "type": "string"
       }
@@ -44,11 +38,6 @@
           {
             "internalType": "string",
             "name": "action",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "timestamp",
             "type": "string"
           },
           {
@@ -101,11 +90,6 @@
       {
         "internalType": "string",
         "name": "action",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "timestamp",
         "type": "string"
       },
       {

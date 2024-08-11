@@ -30,7 +30,7 @@ func NewPDPHandler(instance *PDP.PDP, auth *bind.TransactOpts, client *ethclient
     }
 }
 
-func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, endTime string) (bool, string, error) {
+func (h *PDPHandler) Layer1EvaluateAccess(entityID uint, _model_type string, _zone int, _startTime string, _endTime string, _accessGranted bool) (bool, string, error) {
     if h.Client == nil {
         log.Printf("Ethereum client is nil")
         return false, "", fmt.Errorf("Ethereum client is not initialized")
@@ -43,10 +43,9 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
     
     bigID := big.NewInt(int64(entityID))
     log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
-    
-    bigZone := big.NewInt(int64(zone))
+    bigZone := big.NewInt((int64(_zone)))
 
-    tx, err := h.Instance.EvaluateAccess(h.Auth, bigID, bigZone, startTime, endTime)
+    tx, err := h.Instance.Layer1EvaluateAccess(h.Auth, bigID, _model_type, bigZone, _startTime, _endTime, _accessGranted )
     if err != nil {
         log.Printf("Failed to call EvaluateAccess: %v", err)
         return false, "", err
@@ -67,7 +66,7 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
 
     log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
 
-    eventSignature := []byte("ActionLogged(address,string,string,string)")
+    eventSignature := []byte("AccessEvaluated(uint,bool)")
     eventSigHash := crypto.Keccak256Hash(eventSignature)
     accessGranted := false
 
@@ -82,10 +81,8 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
         // Parse the event
         log.Println("Matching event signature found, attempting to parse event")
         var event struct {
-            User    *big.Int
-            Action string
-            Timestamp  string
-            Data string
+            DroneId    *big.Int
+            AccessGranted bool
         }
         err := h.parseAccessDecision(vLog, &event)
         if err != nil {
@@ -93,22 +90,213 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
             return false, "", fmt.Errorf("failed to parse AccessDecision event: %v", err)
         }
 
-        // Log event details
-        // log.Printf("Event parsed successfully: EntityId=%s, Granted=%t", event.EntityId.String(), event.Granted)
+        accessGranted = event.AccessGranted
+        // Check if the event matches the given entityId
 
-        // bigInt := new(big.Int)
-        parts := strings.Split(event.Data, ",")
-        log.Printf(event.Data)
-        // id, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[0], ":")[1]), 10)
-        // zone, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[1], ":")[1]), 10)
-        // curretnTime := strings.TrimSpace(strings.SplitN(parts[2], ":", 2)[1])
-        granted := strings.TrimSpace(strings.Split(parts[3], ":")[1]);
+    }
 
-        if granted == "Progressed" {
-            accessGranted = true
-        } else {
-            accessGranted = false
+    log.Printf("EvaluateAccess completed: Granted=%t", accessGranted)
+    return accessGranted, tx.Hash().Hex(), nil
+}
+
+
+func (h *PDPHandler) Layer2EvaluateAccess(entityID uint, _model_type string, _zone int, _startTime string, _endTime string) (bool, string, error) {
+    if h.Client == nil {
+        log.Printf("Ethereum client is nil")
+        return false, "", fmt.Errorf("Ethereum client is not initialized")
+    }
+
+    if h.Instance == nil {
+        log.Printf("PDP instance is nil")
+        return false, "", fmt.Errorf("PDP instance is not initialized")
+    }
+    
+    bigID := big.NewInt(int64(entityID))
+    log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
+    bigZone := big.NewInt((int64(_zone)))
+
+    tx, err := h.Instance.Layer2EvaluateAccess(h.Auth, bigID, _model_type, bigZone, _startTime, _endTime)
+    if err != nil {
+        log.Printf("Failed to call EvaluateAccess: %v", err)
+        return false, "", err
+    }
+
+    log.Printf("Transaction sent: %s", tx.Hash().Hex())
+
+    log.Println("Waiting for transaction to be mined...")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+    defer cancel()
+    
+    receipt, err := bind.WaitMined(ctx, h.Client, tx)
+    if err != nil {
+        log.Printf("Failed to mine transaction: %v", err)
+        return false, "", err
+    }
+
+    log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
+
+    eventSignature := []byte("AccessEvaluated(uint,bool)")
+    eventSigHash := crypto.Keccak256Hash(eventSignature)
+    accessGranted := false
+
+    // var policy Policy.PolicyContractPolicy
+    for _, vLog := range receipt.Logs {
+        log.Printf("Processing log with topics: %v", vLog.Topics)
+        if len(vLog.Topics) == 0 || vLog.Topics[0] != eventSigHash {
+            log.Printf("No matching event signature found in log")
+            continue
         }
+
+        // Parse the event
+        log.Println("Matching event signature found, attempting to parse event")
+        var event struct {
+            DroneId    *big.Int
+            AccessGranted bool
+        }
+        err := h.parseAccessDecision(vLog, &event)
+        if err != nil {
+            log.Printf("Failed to parse AccessDecision event: %v", err)
+            return false, "", fmt.Errorf("failed to parse AccessDecision event: %v", err)
+        }
+
+        accessGranted = event.AccessGranted
+        // Check if the event matches the given entityId
+
+    }
+
+    log.Printf("EvaluateAccess completed: Granted=%t", accessGranted)
+    return accessGranted, tx.Hash().Hex(), nil
+}
+
+func (h *PDPHandler) Layer3EvaluateAccess(entityID uint, _model_type string, _zone int) (bool, string, error) {
+    if h.Client == nil {
+        log.Printf("Ethereum client is nil")
+        return false, "", fmt.Errorf("Ethereum client is not initialized")
+    }
+
+    if h.Instance == nil {
+        log.Printf("PDP instance is nil")
+        return false, "", fmt.Errorf("PDP instance is not initialized")
+    }
+    
+    bigID := big.NewInt(int64(entityID))
+    log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
+    bigZone := big.NewInt(int64(_zone))
+    tx, err := h.Instance.Layer3EvaluateAccess(h.Auth, bigID, _model_type, bigZone)
+    if err != nil {
+        log.Printf("Failed to call EvaluateAccess: %v", err)
+        return false, "", err
+    }
+
+    log.Printf("Transaction sent: %s", tx.Hash().Hex())
+
+    log.Println("Waiting for transaction to be mined...")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+    defer cancel()
+    
+    receipt, err := bind.WaitMined(ctx, h.Client, tx)
+    if err != nil {
+        log.Printf("Failed to mine transaction: %v", err)
+        return false, "", err
+    }
+
+    log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
+
+    eventSignature := []byte("AccessEvaluated(uint,bool)")
+    eventSigHash := crypto.Keccak256Hash(eventSignature)
+    accessGranted := false
+
+    // var policy Policy.PolicyContractPolicy
+    for _, vLog := range receipt.Logs {
+        log.Printf("Processing log with topics: %v", vLog.Topics)
+        if len(vLog.Topics) == 0 || vLog.Topics[0] != eventSigHash {
+            log.Printf("No matching event signature found in log")
+            continue
+        }
+
+        // Parse the event
+        log.Println("Matching event signature found, attempting to parse event")
+        var event struct {
+            DroneId    *big.Int
+            AccessGranted bool
+        }
+        err := h.parseAccessDecision(vLog, &event)
+        if err != nil {
+            log.Printf("Failed to parse AccessDecision event: %v", err)
+            return false, "", fmt.Errorf("failed to parse AccessDecision event: %v", err)
+        }
+
+        accessGranted = event.AccessGranted
+        // Check if the event matches the given entityId
+
+    }
+
+    log.Printf("EvaluateAccess completed: Granted=%t", accessGranted)
+    return accessGranted, tx.Hash().Hex(), nil
+}
+
+func (h *PDPHandler) Layer4EvaluateAccess(entityID uint) (bool, string, error) {
+    if h.Client == nil {
+        log.Printf("Ethereum client is nil")
+        return false, "", fmt.Errorf("Ethereum client is not initialized")
+    }
+
+    if h.Instance == nil {
+        log.Printf("PDP instance is nil")
+        return false, "", fmt.Errorf("PDP instance is not initialized")
+    }
+    
+    bigID := big.NewInt(int64(entityID))
+    log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
+    
+    tx, err := h.Instance.Layer4EvaluateAccess(h.Auth, bigID)
+    if err != nil {
+        log.Printf("Failed to call EvaluateAccess: %v", err)
+        return false, "", err
+    }
+
+    log.Printf("Transaction sent: %s", tx.Hash().Hex())
+
+    log.Println("Waiting for transaction to be mined...")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+    defer cancel()
+    
+    receipt, err := bind.WaitMined(ctx, h.Client, tx)
+    if err != nil {
+        log.Printf("Failed to mine transaction: %v", err)
+        return false, "", err
+    }
+
+    log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
+
+    eventSignature := []byte("AccessEvaluated(uint,bool)")
+    eventSigHash := crypto.Keccak256Hash(eventSignature)
+    accessGranted := false
+
+    // var policy Policy.PolicyContractPolicy
+    for _, vLog := range receipt.Logs {
+        log.Printf("Processing log with topics: %v", vLog.Topics)
+        if len(vLog.Topics) == 0 || vLog.Topics[0] != eventSigHash {
+            log.Printf("No matching event signature found in log")
+            continue
+        }
+
+        // Parse the event
+        log.Println("Matching event signature found, attempting to parse event")
+        var event struct {
+            DroneId    *big.Int
+            AccessGranted bool
+        }
+        err := h.parseAccessDecision(vLog, &event)
+        if err != nil {
+            log.Printf("Failed to parse AccessDecision event: %v", err)
+            return false, "", fmt.Errorf("failed to parse AccessDecision event: %v", err)
+        }
+
+        accessGranted = event.AccessGranted
         // Check if the event matches the given entityId
 
     }
@@ -118,54 +306,40 @@ func (h *PDPHandler) EvaluateAccess(entityID uint, zone int, startTime string, e
 }
 
 func (h *PDPHandler) parseAccessDecision(logEntry *types.Log, event *struct {
-    User    *big.Int
-    Action string
-    Timestamp  string
-    Data string
+    DroneId *big.Int
+    AccessGranted bool
 }) error {
     abiDefinition := `[{
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "entityId",
+        "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "action",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "timestamp",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "data",
-        "type": "string"
+        "internalType": "bool",
+        "name": "accessGranted",
+        "type": "bool"
       }
     ],
-    "name": "ActionLogged",
+    "name": "AccessEvaluated",
     "type": "event"
-  }]`
+    }]`
     parsedABI, err := abi.JSON(strings.NewReader(abiDefinition))
     if err != nil {
         return err
     }
 
-    err = parsedABI.UnpackIntoInterface(event, "ActionLogged", logEntry.Data)
+    err = parsedABI.UnpackIntoInterface(event, "AccessEvaluated", logEntry.Data)
     if err != nil {
         return err
     }
 
     if len(logEntry.Topics) > 1 {
-        event.User = new(big.Int).SetBytes(logEntry.Topics[1].Bytes())
+        event.DroneId = new(big.Int).SetBytes(logEntry.Topics[1].Bytes())
     } else {
         return fmt.Errorf("insufficient topics in log entry")
     }

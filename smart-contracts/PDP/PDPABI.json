@@ -2,27 +2,77 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_policyAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_droneAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_loggerAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "uint256",
-        "name": "_entityId",
+        "name": "entityId",
         "type": "uint256"
       },
       {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "accessGranted",
+        "type": "bool"
+      }
+    ],
+    "name": "AccessEvaluated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_model_type",
+        "type": "string"
+      },
+      {
         "internalType": "int256",
-        "name": "zone",
+        "name": "_zone",
         "type": "int256"
       },
       {
         "internalType": "string",
-        "name": "startTime",
+        "name": "_startTime",
         "type": "string"
       },
       {
         "internalType": "string",
-        "name": "endTime",
+        "name": "_endTime",
         "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "_accessGranted",
+        "type": "bool"
       }
     ],
-    "name": "evaluateAccess",
+    "name": "layer1EvaluateAccess",
     "outputs": [
       {
         "internalType": "bool",
@@ -36,13 +86,102 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_loggerAddress",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_model_type",
+        "type": "string"
+      },
+      {
+        "internalType": "int256",
+        "name": "_zone",
+        "type": "int256"
+      },
+      {
+        "internalType": "string",
+        "name": "_startTime",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_endTime",
+        "type": "string"
+      }
+    ],
+    "name": "layer2EvaluateAccess",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "constructor"
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_model_type",
+        "type": "string"
+      },
+      {
+        "internalType": "int256",
+        "name": "_zone",
+        "type": "int256"
+      }
+    ],
+    "name": "layer3EvaluateAccess",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_entityId",
+        "type": "uint256"
+      }
+    ],
+    "name": "layer4EvaluateAccess",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "drone",
+    "outputs": [
+      {
+        "internalType": "contract DroneContract",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [],
@@ -50,6 +189,19 @@
     "outputs": [
       {
         "internalType": "contract LoggingContract",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "policy",
+    "outputs": [
+      {
+        "internalType": "contract PolicyContract",
         "name": "",
         "type": "address"
       }

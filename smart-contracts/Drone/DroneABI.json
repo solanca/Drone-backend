@@ -2,13 +2,33 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "loggerAddress",
-        "type": "address"
+        "internalType": "string",
+        "name": "_model_type",
+        "type": "string"
+      },
+      {
+        "internalType": "int256",
+        "name": "_zone",
+        "type": "int256"
       }
     ],
+    "name": "createDrone",
+    "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "constructor"
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "deleteDrone",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "anonymous": false,
@@ -76,6 +96,11 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
         "internalType": "string",
         "name": "_model_type",
         "type": "string"
@@ -86,20 +111,7 @@
         "type": "int256"
       }
     ],
-    "name": "createDrone",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_id",
-        "type": "uint256"
-      }
-    ],
-    "name": "deleteDrone",
+    "name": "updateDrone",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -176,7 +188,7 @@
         "type": "tuple"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -257,19 +269,6 @@
   },
   {
     "inputs": [],
-    "name": "logger",
-    "outputs": [
-      {
-        "internalType": "contract LoggingContract",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "nextId",
     "outputs": [
       {
@@ -279,29 +278,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_id",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "_model_type",
-        "type": "string"
-      },
-      {
-        "internalType": "int256",
-        "name": "_zone",
-        "type": "int256"
-      }
-    ],
-    "name": "updateDrone",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

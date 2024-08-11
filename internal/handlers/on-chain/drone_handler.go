@@ -165,60 +165,9 @@ func (h *DroneHandler) GetDrone(id uint) (Drone.DroneContractDrone, error) {
         return Drone.DroneContractDrone{}, fmt.Errorf("Ethereum client is not initialized")
     }
 
-    tx, err := h.Instance.GetDrone(h.Auth, bigID)
+    drone, err := h.Instance.GetDrone(&bind.CallOpts{}, bigID)
     if err != nil {
         return Drone.DroneContractDrone{}, err
-    }
-
-    log.Printf("Transaction sent: %s", tx.Hash().Hex())
-
-    log.Printf("Transaction sent: %s", tx.Hash().Hex())
-
-    log.Println("Waiting for transaction to be mined...")
-
-    // Use context with timeout
-    ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-    defer cancel()
-
-    receipt, err := bind.WaitMined(ctx, h.Client, tx)
-    if err != nil {
-        return Drone.DroneContractDrone{}, err
-    }
-
-    var drone Drone.DroneContractDrone
-    for _, vLog := range receipt.Logs {
-        log.Printf("Processing log with topics: %v", vLog.Topics)
-        eventSignature := []byte("ActionLogged(address,string,string,string)")
-        eventSigHash := crypto.Keccak256Hash(eventSignature)
-        if len(vLog.Topics) > 0 && vLog.Topics[0] == eventSigHash {
-            log.Println("Matching event signature found, attempting to parse event")
-            var event struct {
-                User    *big.Int
-                Action string
-                Timestamp  string
-                Data string
-            }
-            err := h.parseDroneAccessed(vLog, &event)
-            if err != nil {
-                return Drone.DroneContractDrone{}, fmt.Errorf("failed to parse DroneAccessed event: %v", err)
-            }
-            
-            log.Printf("Event parsed successfully")
-            log.Printf("%v", event.Data);
-
-            bigInt := new(big.Int)
-            parts := strings.Split(event.Data, ",")
-            log.Printf(event.Data)
-            model := strings.TrimSpace(strings.Split(parts[1], ":")[1])
-            id, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[0], ":")[1]), 10)
-            zone, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[2], ":")[1]), 10)
-
-            drone = Drone.DroneContractDrone{
-                Id:    id,
-                ModelType: model,
-                Zone:  zone,
-            }
-        }
     }
     return drone, nil
 }

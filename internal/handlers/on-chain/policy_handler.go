@@ -166,64 +166,11 @@ func (h *PolicyHandler) GetPolicyByZone(zone int) (Policy.PolicyContractPolicy, 
         return Policy.PolicyContractPolicy{}, fmt.Errorf("Ethereum client is not initialized")
     }
 
-    tx, err := h.Instance.GetPolicyByZone(h.Auth, bigZone)
+    policy, err := h.Instance.GetPolicyByZone(&bind.CallOpts{}, bigZone)
     if err != nil {
         return Policy.PolicyContractPolicy{}, err
     }
 
-    log.Printf("Transaction sent: %s", tx.Hash().Hex())
-
-    log.Printf("Transaction sent: %s", tx.Hash().Hex())
-
-    log.Println("Waiting for transaction to be mined...")
-
-    // Use context with timeout
-    ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-    defer cancel()
-
-    receipt, err := bind.WaitMined(ctx, h.Client, tx)
-    if err != nil {
-        return Policy.PolicyContractPolicy{}, err
-    }
-    log.Printf("Receipt: %v", receipt.Logs)
-
-    var policy Policy.PolicyContractPolicy
-    for _, vLog := range receipt.Logs {
-        log.Printf("Processing log with topics: %v", vLog.Topics)
-        eventSignature := []byte("ActionLogged(address,string,string,string)")
-        eventSigHash := crypto.Keccak256Hash(eventSignature)
-        if len(vLog.Topics) > 0 && vLog.Topics[0] == eventSigHash {
-            log.Println("Matching event signature found, attempting to parse event")
-            var event struct {
-                User    *big.Int
-                Action string
-                Timestamp  string
-                Data string
-            }
-            err := h.parseLog(vLog, &event)
-            if err != nil {
-                return Policy.PolicyContractPolicy{}, fmt.Errorf("failed to parse GetPolicyByZone event: %v", err)
-            }
-            
-            log.Printf("Event parsed successfully")
-            log.Printf("%v", event.Data);
-
-            bigInt := new(big.Int)
-            parts := strings.Split(event.Data, ",")
-            log.Printf(event.Data)
-            id, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[0], ":")[1]), 10)
-            zone, _ := bigInt.SetString(strings.TrimSpace(strings.Split(parts[1], ":")[1]), 10)
-            startTime := strings.TrimSpace(strings.SplitN(parts[2], ":", 2)[1])
-            endTime := strings.TrimSpace(strings.SplitN(parts[3], ":", 2)[1])
-
-            policy = Policy.PolicyContractPolicy{
-                Id:    id,
-                Zone:  zone,
-                StartTime: startTime,
-                EndTime: endTime,
-            }
-        }
-    }
     return policy, nil
 }
 
