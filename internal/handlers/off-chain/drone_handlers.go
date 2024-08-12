@@ -20,6 +20,20 @@ func CreateDroneHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if drone.ModelType == "Terminal" {
+		var existingDrone models.Drone
+		if err := database.DB.Where("model_type = ? AND zone = ?", "Terminal", drone.Zone).First(&existingDrone).Error; err == nil {
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "A terminal drone already exists in this zone.",
+			})
+			return
+		} else if err != gorm.ErrRecordNotFound {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	if err := database.DB.Create(&drone).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

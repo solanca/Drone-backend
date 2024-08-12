@@ -126,7 +126,11 @@ func (api *DroneAPI) CreateDroneHandler(w http.ResponseWriter, r *http.Request) 
 
     drone, err := api.Handler.CreateDrone(req.ModelType, req.Zone)
     if err != nil {
-        http.Error(w, fmt.Sprintf("Failed to create drone: %v", err), http.StatusInternalServerError)
+        // http.Error(w, fmt.Sprintf("Failed to create drone: %v", err), http.StatusInternalServerError)
+        w.WriteHeader(http.StatusConflict)
+        json.NewEncoder(w).Encode(map[string]string{
+            "error": err.Error(),
+        })
         return
     }
 

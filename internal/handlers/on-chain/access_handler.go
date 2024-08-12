@@ -66,7 +66,7 @@ func (h *PDPHandler) Layer1EvaluateAccess(entityID uint, _model_type string, _zo
 
     log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
 
-    eventSignature := []byte("AccessEvaluated(uint,bool)")
+    eventSignature := []byte("AccessEvaluated(uint256,bool)")
     eventSigHash := crypto.Keccak256Hash(eventSignature)
     accessGranted := false
 
@@ -136,7 +136,7 @@ func (h *PDPHandler) Layer2EvaluateAccess(entityID uint, _model_type string, _zo
 
     log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
 
-    eventSignature := []byte("AccessEvaluated(uint,bool)")
+    eventSignature := []byte("AccessEvaluated(uint256,bool)")
     eventSigHash := crypto.Keccak256Hash(eventSignature)
     accessGranted := false
 
@@ -204,7 +204,7 @@ func (h *PDPHandler) Layer3EvaluateAccess(entityID uint, _model_type string, _zo
 
     log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
 
-    eventSignature := []byte("AccessEvaluated(uint,bool)")
+    eventSignature := []byte("AccessEvaluated(uint256,bool)")
     eventSigHash := crypto.Keccak256Hash(eventSignature)
     accessGranted := false
 
@@ -272,7 +272,7 @@ func (h *PDPHandler) Layer4EvaluateAccess(entityID uint) (bool, string, error) {
 
     log.Printf("Transaction mined: %s", receipt.TxHash.Hex())
 
-    eventSignature := []byte("AccessEvaluated(uint,bool)")
+    eventSignature := []byte("AccessEvaluated(uint256,bool)")
     eventSigHash := crypto.Keccak256Hash(eventSignature)
     accessGranted := false
 
@@ -313,7 +313,7 @@ func (h *PDPHandler) parseAccessDecision(logEntry *types.Log, event *struct {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "entityId",
         "type": "uint256"
@@ -327,7 +327,7 @@ func (h *PDPHandler) parseAccessDecision(logEntry *types.Log, event *struct {
     ],
     "name": "AccessEvaluated",
     "type": "event"
-    }]`
+  }]`
     parsedABI, err := abi.JSON(strings.NewReader(abiDefinition))
     if err != nil {
         return err
