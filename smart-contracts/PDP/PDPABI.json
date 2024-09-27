@@ -40,6 +40,19 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "drone",
+    "outputs": [
+      {
+        "internalType": "contract DroneContract",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -72,7 +85,7 @@
         "type": "bool"
       }
     ],
-    "name": "layer1EvaluateAccess",
+    "name": "level0EvaluateAccess",
     "outputs": [
       {
         "internalType": "bool",
@@ -111,7 +124,7 @@
         "type": "string"
       }
     ],
-    "name": "layer2EvaluateAccess",
+    "name": "level1EvaluateAccess",
     "outputs": [
       {
         "internalType": "bool",
@@ -140,7 +153,7 @@
         "type": "int256"
       }
     ],
-    "name": "layer3EvaluateAccess",
+    "name": "level2EvaluateAccess",
     "outputs": [
       {
         "internalType": "bool",
@@ -159,7 +172,7 @@
         "type": "uint256"
       }
     ],
-    "name": "layer4EvaluateAccess",
+    "name": "level3EvaluateAccess",
     "outputs": [
       {
         "internalType": "bool",
@@ -168,19 +181,6 @@
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "drone",
-    "outputs": [
-      {
-        "internalType": "contract DroneContract",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

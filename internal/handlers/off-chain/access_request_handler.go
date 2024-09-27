@@ -30,7 +30,7 @@ func AccessRequestHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	requestSentence := fmt.Sprintf("Small Drone %s sent the access request", request.EntityID)
+	requestSentence := fmt.Sprintf("Terminal Drone %s sent the access request", request.EntityID)
 
 	accessJSON, err := json.Marshal(models.Access{
 		Request: requestSentence,

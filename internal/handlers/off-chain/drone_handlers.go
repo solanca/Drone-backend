@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// CreateDroneHandler - handler to create a new small drone
+// CreateDroneHandler - handler to create a new terminal drone
 func CreateDroneHandler(w http.ResponseWriter, r *http.Request) {
 	var drone models.Drone
 	if err := json.NewDecoder(r.Body).Decode(&drone); err != nil {
@@ -20,12 +20,12 @@ func CreateDroneHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if drone.ModelType == "Terminal" {
+	if drone.ModelType == "Edge" {
 		var existingDrone models.Drone
-		if err := database.DB.Where("model_type = ? AND zone = ?", "Terminal", drone.Zone).First(&existingDrone).Error; err == nil {
+		if err := database.DB.Where("model_type = ? AND zone = ?", "Edge", drone.Zone).First(&existingDrone).Error; err == nil {
 			w.WriteHeader(http.StatusConflict)
 			json.NewEncoder(w).Encode(map[string]string{
-				"error": "A terminal drone already exists in this zone.",
+				"error": "A Edge drone already exists in this zone.",
 			})
 			return
 		} else if err != gorm.ErrRecordNotFound {
@@ -43,7 +43,7 @@ func CreateDroneHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(drone)
 }
 
-// GetDronesHandler - handler to get all small drones
+// GetDronesHandler - handler to get all terminal drones
 func GetDronesHandler(w http.ResponseWriter, r *http.Request) {
 	var drones []models.Drone
 	if err := database.DB.Find(&drones).Error; err != nil {
@@ -55,7 +55,7 @@ func GetDronesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(drones)
 }
 
-// GetDroneHandler - handler to get a small drone by ID
+// GetDroneHandler - handler to get a terminal drone by ID
 func GetDroneHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	var drone models.Drone
@@ -72,7 +72,7 @@ func GetDroneHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(drone)
 }
 
-// UpdateDroneHandler - handler to update a small drone by ID
+// UpdateDroneHandler - handler to update a terminal drone by ID
 func UpdateDroneHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	var drone models.Drone
@@ -99,7 +99,7 @@ func UpdateDroneHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(drone)
 }
 
-// DeleteDroneHandler - handler to delete a small drone by ID
+// DeleteDroneHandler - handler to delete a terminal drone by ID
 func DeleteDroneHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if err := database.DB.Delete(&models.Drone{}, id).Error; err != nil {

@@ -30,7 +30,7 @@ func NewPDPHandler(instance *PDP.PDP, auth *bind.TransactOpts, client *ethclient
     }
 }
 
-func (h *PDPHandler) Layer1EvaluateAccess(entityID uint, _model_type string, _zone int, _startTime string, _endTime string, _accessGranted bool) (bool, string, error) {
+func (h *PDPHandler) Level0EvaluateAccess(entityID uint, _model_type string, _zone int, _startTime string, _endTime string, _accessGranted bool) (bool, string, error) {
     if h.Client == nil {
         log.Printf("Ethereum client is nil")
         return false, "", fmt.Errorf("Ethereum client is not initialized")
@@ -45,7 +45,7 @@ func (h *PDPHandler) Layer1EvaluateAccess(entityID uint, _model_type string, _zo
     log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
     bigZone := big.NewInt((int64(_zone)))
 
-    tx, err := h.Instance.Layer1EvaluateAccess(h.Auth, bigID, _model_type, bigZone, _startTime, _endTime, _accessGranted )
+    tx, err := h.Instance.Level0EvaluateAccess(h.Auth, bigID, _model_type, bigZone, _startTime, _endTime, _accessGranted )
     if err != nil {
         log.Printf("Failed to call EvaluateAccess: %v", err)
         return false, "", err
@@ -100,7 +100,7 @@ func (h *PDPHandler) Layer1EvaluateAccess(entityID uint, _model_type string, _zo
 }
 
 
-func (h *PDPHandler) Layer2EvaluateAccess(entityID uint, _model_type string, _zone int, _startTime string, _endTime string) (bool, string, error) {
+func (h *PDPHandler) Level1EvaluateAccess(entityID uint, _model_type string, _zone int, _startTime string, _endTime string) (bool, string, error) {
     if h.Client == nil {
         log.Printf("Ethereum client is nil")
         return false, "", fmt.Errorf("Ethereum client is not initialized")
@@ -115,7 +115,7 @@ func (h *PDPHandler) Layer2EvaluateAccess(entityID uint, _model_type string, _zo
     log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
     bigZone := big.NewInt((int64(_zone)))
 
-    tx, err := h.Instance.Layer2EvaluateAccess(h.Auth, bigID, _model_type, bigZone, _startTime, _endTime)
+    tx, err := h.Instance.Level1EvaluateAccess(h.Auth, bigID, _model_type, bigZone, _startTime, _endTime)
     if err != nil {
         log.Printf("Failed to call EvaluateAccess: %v", err)
         return false, "", err
@@ -169,7 +169,7 @@ func (h *PDPHandler) Layer2EvaluateAccess(entityID uint, _model_type string, _zo
     return accessGranted, tx.Hash().Hex(), nil
 }
 
-func (h *PDPHandler) Layer3EvaluateAccess(entityID uint, _model_type string, _zone int) (bool, string, error) {
+func (h *PDPHandler) Level2EvaluateAccess(entityID uint, _model_type string, _zone int) (bool, string, error) {
     if h.Client == nil {
         log.Printf("Ethereum client is nil")
         return false, "", fmt.Errorf("Ethereum client is not initialized")
@@ -183,7 +183,7 @@ func (h *PDPHandler) Layer3EvaluateAccess(entityID uint, _model_type string, _zo
     bigID := big.NewInt(int64(entityID))
     log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
     bigZone := big.NewInt(int64(_zone))
-    tx, err := h.Instance.Layer3EvaluateAccess(h.Auth, bigID, _model_type, bigZone)
+    tx, err := h.Instance.Level2EvaluateAccess(h.Auth, bigID, _model_type, bigZone)
     if err != nil {
         log.Printf("Failed to call EvaluateAccess: %v", err)
         return false, "", err
@@ -237,7 +237,7 @@ func (h *PDPHandler) Layer3EvaluateAccess(entityID uint, _model_type string, _zo
     return accessGranted, tx.Hash().Hex(), nil
 }
 
-func (h *PDPHandler) Layer4EvaluateAccess(entityID uint) (bool, string, error) {
+func (h *PDPHandler) Level3EvaluateAccess(entityID uint) (bool, string, error) {
     if h.Client == nil {
         log.Printf("Ethereum client is nil")
         return false, "", fmt.Errorf("Ethereum client is not initialized")
@@ -251,7 +251,7 @@ func (h *PDPHandler) Layer4EvaluateAccess(entityID uint) (bool, string, error) {
     bigID := big.NewInt(int64(entityID))
     log.Printf("Starting EvaluateAccess for entityID: %d", entityID)
     
-    tx, err := h.Instance.Layer4EvaluateAccess(h.Auth, bigID)
+    tx, err := h.Instance.Level3EvaluateAccess(h.Auth, bigID)
     if err != nil {
         log.Printf("Failed to call EvaluateAccess: %v", err)
         return false, "", err

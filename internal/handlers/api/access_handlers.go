@@ -65,7 +65,7 @@ func (api *AccessAPI) Layer1AccessRequestHandler(w http.ResponseWriter, r *http.
     }
     
 	mu.Lock()
-    requestSentence := fmt.Sprintf("Small Drone %s sent the access request", req.EntityID)
+    requestSentence := fmt.Sprintf("Terminal Drone %s sent the access request", req.EntityID)
 	accessJSON, err := json.Marshal(models.Access{
         Request: requestSentence,
 		Status:  "Received",
@@ -186,7 +186,7 @@ func (api *AccessAPI) Layer1AccessRequestHandler(w http.ResponseWriter, r *http.
 
 
     // PDP
-    granted, txHash, err := api.PDPHandler.Layer1EvaluateAccess(uint(uint64ID), drone.ModelType, policy.Zone, policy.StartTime.String(), policy.EndTime.String(), accessGranted)
+    granted, txHash, err := api.PDPHandler.Level0EvaluateAccess(uint(uint64ID), drone.ModelType, policy.Zone, policy.StartTime.String(), policy.EndTime.String(), accessGranted)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to evaluate access: %v", err), http.StatusInternalServerError)
         return
@@ -243,12 +243,14 @@ func (api *AccessAPI) Layer2AccessRequestHandler(w http.ResponseWriter, r *http.
         return
     }
 
+    mu.Lock()
     // PDP
-    granted, txHash, err := api.PDPHandler.Layer2EvaluateAccess(uint(uint64ID), drone.ModelType, policy.Zone, policy.StartTime.String(), policy.EndTime.String())
+    granted, txHash, err := api.PDPHandler.Level1EvaluateAccess(uint(uint64ID), drone.ModelType, policy.Zone, policy.StartTime.String(), policy.EndTime.String())
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to evaluate access: %v", err), http.StatusInternalServerError)
         return
     }
+    mu.Unlock()
 
     response := AccessResponse{
         Granted:         granted,
@@ -286,12 +288,14 @@ func (api *AccessAPI) Layer3AccessRequestHandler(w http.ResponseWriter, r *http.
         return
     }
 
+    mu.Lock()
     // PDP - Write operation (interacting with the smart contract)
-    granted, txHash, err := api.PDPHandler.Layer3EvaluateAccess(uint(uint64ID), drone.ModelType, drone.Zone)
+    granted, txHash, err := api.PDPHandler.Level2EvaluateAccess(uint(uint64ID), drone.ModelType, drone.Zone)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to evaluate access: %v", err), http.StatusInternalServerError)
         return
     }
+    mu.Unlock()
     
     response := AccessResponse{
         Granted:         granted,
@@ -320,12 +324,14 @@ func (api *AccessAPI) Layer4AccessRequestHandler(w http.ResponseWriter, r *http.
     // Lock for writing the initial history record
     uint64ID, _ := strconv.ParseUint(req.EntityID, 10, 0)
 
+    mu.Lock()
     // PDP - Write operation (interacting with the smart contract)
-    granted, txHash, err := api.PDPHandler.Layer4EvaluateAccess(uint(uint64ID))
+    granted, txHash, err := api.PDPHandler.Level3EvaluateAccess(uint(uint64ID))
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to evaluate access: %v", err), http.StatusInternalServerError)
         return
     }
+    mu.Unlock()
 
     response := AccessResponse{
         Granted:         granted,
