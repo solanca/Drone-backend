@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type AccessAPI struct {
@@ -22,11 +21,11 @@ type AccessAPI struct {
     PolicyAPI   *PolicyAPI
 }
 
-var db *gorm.DB
+// var db *gorm.DB
 
-func InitDB(database *gorm.DB) {
-	db = database
-}
+// func InitDB(database *gorm.DB) {
+// 	db = database
+// }
 
 // var mu sync.Mutex
 var mu sync.RWMutex
@@ -186,11 +185,13 @@ func (api *AccessAPI) Layer1AccessRequestHandler(w http.ResponseWriter, r *http.
 
 
     // PDP
+    mu.Lock()
     granted, txHash, err := api.PDPHandler.Level0EvaluateAccess(uint(uint64ID), drone.ModelType, policy.Zone, policy.StartTime.String(), policy.EndTime.String(), accessGranted)
     if err != nil {
         http.Error(w, fmt.Sprintf("Failed to evaluate access: %v", err), http.StatusInternalServerError)
         return
     }
+    mu.Unlock()
 
     response := AccessResponse{
         Granted:         granted,
